@@ -1,0 +1,896 @@
+<!doctype html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Αυτοψία</title>
+<meta name="description" content="Γρήγορη αυτοψία αυτοκινήτων: βαφή, διορθώσεις, ελαστικά, ελλείψεις και αναφορά διαπραγμάτευσης.">
+<meta name="theme-color" content="#0d5a6c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Αυτοψία">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Commissioner:wght@400;500;600;700&family=Fira+Sans+Extra+Condensed:wght@600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font-size:14px}
+img{max-width:100%}
+[hidden]{display:none!important}
+
+/* Layout: one-thumb field tool — sticky header, single column of stacked sections, fixed action bar in car view */
+:root{
+  --bg:#edf0f3; --surface:#ffffff; --ink:#111a24; --muted:#566271; --line:#d2d9e1;
+  --accent:#0d5a6c; --accent-ink:#ffffff; --accent-soft:#dcecf0;
+  --ok:#1d8048; --ok-bg:#dff1e6; --paint:#b56f00; --paint-bg:#fbecd2; --filler:#c22a2a; --filler-bg:#f9dddd;
+  --none:#e2e7ec; --car:#c4ccd5;
+  --f-display:"Fira Sans Extra Condensed","Roboto Condensed","Arial Narrow",sans-serif;
+  --f-body:"Commissioner","Segoe UI",Roboto,system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d1318; --surface:#161e26; --ink:#e7ecf1; --muted:#95a3b1; --line:#2a3541;
+  --accent:#55b8cc; --accent-ink:#06222a; --accent-soft:#163540;
+  --ok:#43c07a; --ok-bg:#16301f; --paint:#f2a83a; --paint-bg:#3a2a10; --filler:#ff6f6f; --filler-bg:#3d1717;
+  --none:#26313c; --car:#3a4652; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1318; --surface:#161e26; --ink:#e7ecf1; --muted:#95a3b1; --line:#2a3541;
+  --accent:#55b8cc; --accent-ink:#06222a; --accent-soft:#163540;
+  --ok:#43c07a; --ok-bg:#16301f; --paint:#f2a83a; --paint-bg:#3a2a10; --filler:#ff6f6f; --filler-bg:#3d1717;
+  --none:#26313c; --car:#3a4652; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.wrap{max-width:640px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+header.top .wrap{display:flex;align-items:center;gap:10px;padding-block:10px}
+.brand{font-family:var(--f-display);font-weight:700;font-size:22px;letter-spacing:.02em;text-transform:uppercase;line-height:1}
+.brand small{display:block;font-family:var(--f-body);font-size:11px;font-weight:500;letter-spacing:.06em;color:var(--muted);text-transform:none;margin-top:2px}
+.themebtn{margin-left:0;order:2;flex:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;min-width:44px;height:36px;padding:0 10px;font-size:13px;font-weight:700;display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.themebtn svg{width:18px;height:18px;flex:none}
+@media (max-width:440px){.themebtn{font-size:0;gap:0;padding:0}}
+.sync{order:1;border:0;background:transparent;padding:6px 0;cursor:pointer;margin-left:auto;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.sync i{width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block}
+.sync.on i{background:var(--ok)} .sync.pending i{background:var(--paint)}
+.tabs{display:flex;gap:6px;padding-block:0 10px}
+.tab{flex:1;border:1px solid var(--line);background:transparent;border-radius:10px;padding:9px 6px;font-weight:600;font-size:14px}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+main .wrap{padding-block:14px 120px;display:flex;flex-direction:column;gap:14px}
+.h{font-family:var(--f-display);font-weight:700;font-size:20px;letter-spacing:.03em;text-transform:uppercase;margin:0}
+.label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.sec{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.sec-h{display:flex;align-items:baseline;gap:8px}
+.sec-h .h{font-size:18px}
+.sec-h .aux{margin-left:auto;font-size:13px;color:var(--muted)}
+.btn{border:0;border-radius:12px;padding:13px 16px;font-weight:700;background:var(--accent);color:var(--accent-ink);min-height:48px}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.danger{background:var(--filler);color:#fff}
+.btn.sm{min-height:38px;padding:8px 12px;font-size:13px;border-radius:10px}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+/* list */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;grid-template-columns:1fr auto;gap:6px 12px;text-align:left;width:100%}
+.card .t{font-weight:700;font-size:17px;min-width:0;overflow-wrap:anywhere}
+.card .m{grid-column:1/-1;font-size:13px;color:var(--muted)}
+.plate{font-family:var(--f-mono);font-size:12px;font-weight:700;border:1.5px solid var(--ink);border-radius:4px;padding:1px 6px;letter-spacing:.04em;white-space:nowrap}
+.strip{grid-column:1/-1;display:flex;gap:3px}
+.strip span{flex:1;height:6px;border-radius:2px;background:var(--none)}
+.s-ok{background:var(--ok)!important}.s-paint{background:var(--paint)!important}.s-filler{background:var(--filler)!important}
+.card .foot{grid-column:1/-1;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px}
+.pill{border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}
+.v-yes{background:var(--ok-bg);color:var(--ok)}.v-maybe{background:var(--paint-bg);color:var(--paint)}.v-no{background:var(--filler-bg);color:var(--filler)}.v-none{background:var(--none);color:var(--muted)}
+.ded{margin-left:auto;font-weight:700}
+.empty{text-align:left;display:flex;flex-direction:column;gap:12px}
+.steps{display:grid;gap:8px;margin:0;padding:0;list-style:none;counter-reset:s}
+.steps li{display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start;font-size:14px}
+.steps li::before{counter-increment:s;content:counter(s);font-family:var(--f-mono);font-weight:700;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent)}
+/* car view */
+.carbar{display:flex;align-items:center;gap:10px}
+.back{border:1px solid var(--line);background:var(--surface);border-radius:10px;width:44px;height:44px;font-size:20px;flex:none}
+.carbar .title{min-width:0;flex:1;font-weight:700;font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.timer{font-family:var(--f-mono);font-weight:700;font-size:20px;padding:6px 10px;border-radius:10px;background:var(--surface);border:1px solid var(--line);font-variant-numeric:tabular-nums}
+.timer.warn{background:var(--paint-bg);color:var(--paint);border-color:var(--paint)}
+.timer.over{background:var(--filler);color:#fff;border-color:var(--filler)}
+.tbar{height:4px;border-radius:2px;background:var(--none);overflow:hidden}
+.tbar b{display:block;height:100%;background:var(--accent);transition:width .9s linear}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid2 .full{grid-column:1/-1}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.fld input,.fld textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 12px;background:var(--bg);font-size:16px;min-height:46px}
+.fld textarea{min-height:90px;resize:vertical}
+.paintwrap{display:grid;grid-template-columns:minmax(0,190px) 1fr;gap:14px;align-items:start}
+@media (max-width:440px){.paintwrap{grid-template-columns:150px 1fr;gap:10px}}
+svg.carsvg{width:100%;height:auto;display:block}
+.pnl{cursor:pointer;stroke:var(--surface);stroke-width:2}
+.pnl.none{fill:var(--none)}.pnl.ok{fill:var(--ok)}.pnl.paint{fill:var(--paint)}.pnl.filler{fill:var(--filler)}
+.pnl.fx{fill:var(--accent)}
+.pnl.sel{stroke:var(--ink);stroke-width:3}
+.pv.fxt{fill:var(--accent-ink)}
+.tyres{display:grid;grid-template-columns:1fr 1fr;gap:12px 10px}
+.tyres .full{grid-column:1/-1}
+.fld input.tyin{font-family:var(--f-mono);font-size:20px;font-weight:700;letter-spacing:.08em}
+.seg{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.seg .fbtn{justify-content:center;text-align:center;font-size:14px;padding:8px 10px}
+.fbtns{display:flex;flex-direction:column;gap:6px}
+.fbtn{display:flex;justify-content:space-between;gap:8px;border:2px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 12px;font-weight:600;min-height:46px;align-items:center}
+.fbtn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.pv{font-family:var(--f-mono);font-size:9px;font-weight:700;fill:#fff;pointer-events:none;text-anchor:middle;dominant-baseline:central}
+.pv.dim{fill:var(--muted)}
+.editor{display:flex;flex-direction:column;gap:10px;min-width:0}
+.editor .pn{font-weight:700;font-size:16px;line-height:1.25}
+.mrow{display:flex;gap:8px;align-items:stretch}
+.mrow input{flex:1;min-width:0;font-family:var(--f-mono);font-size:24px;font-weight:700;border:2px solid var(--accent);border-radius:10px;padding:8px 10px;background:var(--bg)}
+.mrow .unit{align-self:center;color:var(--muted);font-family:var(--f-mono)}
+.quick{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 12px;font-size:13px;font-weight:600;min-height:38px}
+.chip.bolt[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.boltdot{fill:var(--ink);stroke:var(--surface);stroke-width:1.5;pointer-events:none}
+.legend{display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.found{font-size:13px;display:flex;flex-direction:column;gap:4px}
+.found div{display:flex;gap:8px}
+.found b{font-family:var(--f-mono)}
+.dgroup{display:flex;flex-direction:column;gap:6px}
+.defects{display:flex;flex-wrap:wrap;gap:6px}
+.def{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 11px;font-size:14px;text-align:left;min-height:42px}
+.def[aria-pressed="true"]{background:var(--filler-bg);border-color:var(--filler);color:var(--ink);font-weight:600}
+.onlist{display:flex;flex-direction:column;gap:6px}
+.onrow{display:grid;grid-template-columns:1fr 104px 36px;gap:8px;align-items:center;font-size:14px}
+.onrow .nm{min-width:0;overflow-wrap:anywhere}
+.onrow input{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--bg);font-family:var(--f-mono);text-align:right;font-size:15px}
+.onrow .x{border:0;background:transparent;font-size:20px;color:var(--muted);height:36px}
+.addrow{display:grid;grid-template-columns:1fr 90px auto;gap:8px}
+.addrow input{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 10px;background:var(--bg);font-size:15px;min-width:0}
+.verdict{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.vbtn{border:2px solid var(--line);background:var(--surface);border-radius:12px;padding:12px 6px;font-weight:700;min-height:50px}
+.vbtn.yes[aria-pressed="true"]{background:var(--ok);border-color:var(--ok);color:#fff}
+.vbtn.maybe[aria-pressed="true"]{background:var(--paint);border-color:var(--paint);color:#fff}
+.vbtn.no[aria-pressed="true"]{background:var(--filler);border-color:var(--filler);color:#fff}
+.calc{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:14px}
+.calc .r{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.calc .big{font-weight:700;font-size:17px;border-top:1px solid var(--line);padding-top:6px}
+.actbar{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.actbar .wrap{display:flex;gap:10px;align-items:center;padding-block:10px}
+.actbar .tot{display:flex;flex-direction:column;line-height:1.15}
+.actbar .tot b{font-family:var(--f-mono);font-size:19px}
+.actbar .btn{margin-left:auto}
+.delrow{display:flex;gap:8px;justify-content:flex-end}
+/* report */
+.rep{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.rep pre{margin:0;white-space:pre-wrap;font-family:var(--f-body);font-size:14px;overflow-wrap:anywhere}
+.rephead{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.tscroll{overflow-x:auto}
+.rtab{width:100%;border-collapse:collapse;font-size:14px}
+.rtab th{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+.rtab td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+.rtab tr:last-child td{border-bottom:0}
+.rtab tbody tr{cursor:pointer}
+.rtab .r{text-align:right;white-space:nowrap}
+.rtab .rm{font-size:12px;color:var(--muted);font-family:var(--f-mono)}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;vertical-align:1px;background:var(--none)}
+.dot.v-yes{background:var(--ok)}.dot.v-maybe{background:var(--paint)}.dot.v-no{background:var(--filler)}
+.rcard{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;scroll-margin-top:120px}
+.rcard.rv-yes{border-top:4px solid var(--ok)}.rcard.rv-maybe{border-top:4px solid var(--paint)}.rcard.rv-no{border-top:4px solid var(--filler)}.rcard.rv-none{border-top:4px solid var(--none)}
+.rh{display:flex;gap:12px;padding:14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.rt{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.rn{font-family:var(--f-display);font-weight:700;font-size:22px;letter-spacing:.02em;line-height:1.1;overflow-wrap:anywhere;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.rm{font-size:13px;color:var(--muted)}
+.byl{font-size:12px;color:var(--accent);font-weight:600}
+.rp{text-align:right;display:flex;flex-direction:column;gap:2px}
+.rbig{font-size:24px;font-weight:700;line-height:1.1}
+.rbody{display:grid;grid-template-columns:110px 1fr;gap:14px;padding:14px}
+@media (max-width:520px){.rbody{grid-template-columns:1fr}.rsvg{display:flex;justify-content:center}.rsvg svg{width:150px}}
+.rsvg svg{width:100%;height:auto}
+.pnl.st{cursor:default;stroke:var(--surface);stroke-width:2}
+.pv.rpt{font-size:15px}.pv.rn0{fill:var(--ink)}
+.rgs{display:flex;flex-direction:column;gap:12px;min-width:0}
+.rg{display:flex;flex-direction:column;gap:6px}
+.rcs{display:flex;flex-wrap:wrap;gap:6px}
+.rc{font-size:13px;line-height:1.3;padding:5px 9px;border-radius:8px;background:var(--bg);border:1px solid var(--line)}
+.rc b{font-weight:700}
+.rc.g{background:var(--ok-bg);border-color:transparent;color:var(--ok)}
+.rc.w{background:var(--paint-bg);border-color:transparent;color:var(--paint)}
+.rc.b{background:var(--filler-bg);border-color:transparent;color:var(--filler)}
+.rc.a{background:var(--accent-soft);border-color:transparent;color:var(--accent)}
+.rc.k{background:var(--ink);color:var(--bg);border-color:transparent}
+.rnote{margin:0;font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere}
+.rf{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 14px;border-top:1px solid var(--line);background:var(--bg)}
+.card.withph{grid-template-columns:76px minmax(0,1fr) auto}
+.card.withph .m,.card.withph .strip,.card.withph .foot{grid-column:2/-1}
+.cthumb{grid-column:1;grid-row:1/span 4;position:relative;border-radius:10px;overflow:hidden;background:var(--none);align-self:stretch;min-height:76px}
+.cthumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.cthumb small{position:absolute;right:4px;bottom:4px;background:rgba(0,0,0,.65);color:#fff;font-family:var(--f-mono);font-size:11px;font-weight:700;border-radius:6px;padding:1px 5px}
+@media (max-width:400px){.card.withph{grid-template-columns:64px minmax(0,1fr) auto}.cthumb{min-height:64px}}
+.phgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
+.ph{position:relative;aspect-ratio:1;max-width:100%}
+.phimg{display:block;width:100%;height:100%;padding:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--none)}
+.phimg img{width:100%;height:100%;object-fit:cover;display:block}
+.phx{position:absolute;top:4px;right:4px;min-width:28px;height:28px;border-radius:14px;border:0;background:rgba(0,0,0,.6);color:#fff;font-size:16px;padding:0 8px}
+.phx.on{background:var(--filler);font-size:12px;font-weight:700}
+.phbadge{position:absolute;left:4px;bottom:4px;font-size:10px;font-weight:700;background:var(--paint);color:#fff;border-radius:6px;padding:2px 6px}
+.phadd{aspect-ratio:1;border:2px dashed var(--line);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:var(--accent);position:relative}
+.phadd span{font-size:32px;font-weight:300;line-height:1}
+.phadd small{font-family:var(--f-mono);color:var(--muted);font-size:12px}
+.phadd input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+.phadd:focus-within{outline:3px solid var(--accent);outline-offset:2px}
+.rphotos{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:0 14px 0;margin-top:14px}
+.rphotos .phimg{aspect-ratio:1;border-radius:8px}
+.phview{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;padding:calc(16px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.phview img{max-width:100%;max-height:100%;object-fit:contain;border-radius:6px}
+.phview button{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:max(12px,env(safe-area-inset-right,0px));width:44px;height:44px;border-radius:22px;border:0;background:rgba(255,255,255,.15);color:#fff;font-size:22px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;font-weight:600;z-index:20}
+.note{font-size:13px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){.tbar b{transition:none}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="brand">Αυτοψία<small>Επιθεώρηση · 5′ ανά αυτοκίνητο</small></div>
+    <button class="themebtn" id="themebtn" data-act="theme" aria-label="Θέμα εμφάνισης"></button>
+    <button class="sync" id="sync" data-act="tab" data-v="settings"><i></i><span>Χωρίς λογαριασμό</span></button>
+  </div>
+  <div class="wrap tabs" role="tablist" id="tabs">
+    <button class="tab" role="tab" data-act="tab" data-v="list" aria-selected="true">Αυτοκίνητα</button>
+    <button class="tab" role="tab" data-act="tab" data-v="report" aria-selected="false">Αναφορά</button>
+    <button class="tab" role="tab" data-act="tab" data-v="settings" aria-selected="false">Ρυθμίσεις</button>
+  </div>
+</header>
+<main id="main"><div class="wrap" id="view"></div></main>
+<div id="actbar" hidden></div>
+<div class="toast" id="toast" hidden></div>
+<div class="phview" id="phview" hidden data-act="phclose"><img alt="Φωτογραφία σε μεγέθυνση"><button data-act="phclose" aria-label="Κλείσιμο">×</button></div>
+
+<script src="config.js"></script>
+<script src="vendor/supabase.js"></script>
+<script>
+(function(){
+"use strict";
+try{document.documentElement.lang="el"}catch(e){}
+const THEMES=['auto','light','dark'];
+const TH_ICON={auto:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>Αυτόματο',
+ light:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Φωτεινό',
+ dark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>Σκοτεινό'};
+let theme='auto';try{theme=localStorage.getItem('autopsia.theme')||'auto'}catch(e){}
+function applyTheme(t,user){theme=t;const r=document.documentElement;
+  if(t==='auto'){if(user)r.removeAttribute('data-theme')}else r.setAttribute('data-theme',t);
+  const b=document.getElementById('themebtn');if(b)b.innerHTML=TH_ICON[t];
+  const m=document.querySelector('meta[name="theme-color"]');if(m){const dark=t==='dark'||(t==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches);m.setAttribute('content',dark?'#161e26':'#ffffff')}
+  if(user){try{localStorage.setItem('autopsia.theme',t)}catch(e){}}}
+applyTheme(theme,false);
+const LS_CARS='autopsia.cars.v1', LS_DIRTY='autopsia.dirty.v1', LS_CFG='autopsia.cfg.v1';
+const LIMIT=300;
+const PANELS=[
+ {id:'fbump',n:'Προφυλακτήρας εμπρός',x:44,y:8,w:112,h:18,rx:8},
+ {id:'hood',n:'Καπό',x:58,y:30,w:84,h:66,rx:6},
+ {id:'ffl',n:'Φτερό εμπρός αριστερό',x:32,y:30,w:22,h:66,rx:5},
+ {id:'ffr',n:'Φτερό εμπρός δεξί',x:146,y:30,w:22,h:66,rx:5},
+ {id:'fdl',n:'Πόρτα εμπρός αριστερή',x:32,y:112,w:22,h:64,rx:3},
+ {id:'fdr',n:'Πόρτα εμπρός δεξιά',x:146,y:112,w:22,h:64,rx:3},
+ {id:'rdl',n:'Πόρτα πίσω αριστερή',x:32,y:180,w:22,h:64,rx:3},
+ {id:'rdr',n:'Πόρτα πίσω δεξιά',x:146,y:180,w:22,h:64,rx:3},
+ {id:'sl',n:'Μαρσπιές αριστερός',x:19,y:104,w:9,h:140,rx:3,v:1},
+ {id:'sr',n:'Μαρσπιές δεξιός',x:172,y:104,w:9,h:140,rx:3,v:1},
+ {id:'rfl',n:'Φτερό πίσω αριστερό',x:32,y:248,w:22,h:62,rx:5},
+ {id:'rfr',n:'Φτερό πίσω δεξί',x:146,y:248,w:22,h:62,rx:5},
+ {id:'roof',n:'Οροφή',x:58,y:122,w:84,h:110,rx:8},
+ {id:'trunk',n:'Πορτ-μπαγκάζ',x:58,y:252,w:84,h:58,rx:6},
+ {id:'rbump',n:'Προφυλακτήρας πίσω',x:44,y:314,w:112,h:18,rx:8}
+];
+const PMAP=Object.fromEntries(PANELS.map(p=>[p.id,p]));
+const WALK=['hood','fbump','ffr','fdr','rdr','sr','rfr','rbump','trunk','rfl','rdl','sl','fdl','ffl','roof'];
+const FIXK=[{id:'fano',n:'Φανοποιία',s:'Φ',ck:'fanoCost',x:1},{id:'vafi',n:'Βαφή',s:'Β',ck:'vafiCost',x:1},{id:'svis',n:'Σβήσιμο',s:'Σ',ck:'svisCost',x:1},{id:'pine',n:'Πινελάκι',s:'Π',ck:'pineCost',x:1},{id:'koub',n:'Κούμπωμα',s:'Κ',ck:'koubCost'},{id:'plas',n:'Πλαστικά',s:'Πλ',ck:'plasCost'}];
+const CATALOG=[
+ {g:'Εσωτερικό',items:[['bio','Θέλει βιολογικό',0],['clean','Απλό καθάρισμα',0],['seat','Κάθισμα οδηγού φθαρμένο',0],['seat2','Κάθισμα συνοδηγού φθαρμένο',0],['steer','Τιμόνι: βαφή / ράψιμο',0],['gear','Λεβιές / χειρόφρενο φθαρμένο',0],['wbtn','Φθαρμένα κουμπιά τιμονιού',0],['cbtn','Φθαρμένα κουμπιά κεντρικής κονσόλας',0],['htear','Σκισμένη οροφή',0],['trfloor','Πορτ-μπαγκάζ: λείπει δάπεδο',0],['trshelf','Πορτ-μπαγκάζ: λείπει εταζέρα',0],['trshelfb','Πορτ-μπαγκάζ: σπασμένη εταζέρα',0]]},
+ {g:'Εξωτερικό',items:[['glass','Πέτρα / ρωγμή παρμπρίζ',250],['lights','Φανάρι θολό / σπασμένο',150]]},
+ {g:'Λειτουργία',items:[['warn','Λυχνία στο καντράν',0],['ac','A/C δεν κρυώνει',150],['noise','Θόρυβος κινητήρα',0],['smoke','Καπνός εξάτμισης',0],['revvib','Κραδασμοί στο γκάζι',0],['service','Ανάβει Service',200]]}
+];
+const UPH={leather:'Δέρμα',fabric:'Ύφασμα',mixed:'Ύφασμα-δέρμα'};
+const FUEL={petrol:'Βενζίνη',diesel:'Πετρέλαιο',mhev:'Mild hybrid βενζίνη',dmhev:'Mild hybrid πετρέλαιο',hev:'Υβριδικό βενζίνη',dhev:'Υβριδικό πετρέλαιο',phev:'Plug-in βενζίνη',dphev:'Plug-in πετρέλαιο',ev:'Ηλεκτρικό',lpg:'Υγραέριο (LPG)',cng:'Φυσικό αέριο (CNG)'};
+const GEAR={manual:'Χειροκίνητο',auto:'Αυτόματο'};
+const OPTS={uph:UPH,fuel:FUEL,gear:GEAR};
+const TYRES=[{k:'fl',n:'Εμπρός αριστερό',s:'ΕΜ-Α'},{k:'fr',n:'Εμπρός δεξί',s:'ΕΜ-Δ'},{k:'rl',n:'Πίσω αριστερό',s:'ΠΙ-Α'},{k:'rr',n:'Πίσω δεξί',s:'ΠΙ-Δ'}];
+const SPARE={spare:'Ρεζέρβα',kit:'Κιτ επισκευής'};
+function dotAge(v){v=String(v||'');if(!/^\d{4}$/.test(v))return null;const w=+v.slice(0,2),y=2000+ +v.slice(2);if(w<1||w>53)return null;
+  const d=new Date(y,0,1+(w-1)*7);const a=(Date.now()-d)/(365.25*864e5);return a<-0.1?null:{w,y,a:Math.max(0,a)}}
+function tyreAge(v){if(!v)return '';const r=dotAge(v);if(!r)return '<span class="note">Γράψε 4 ψηφία: εβδομάδα + έτος</span>';
+  const cl=r.a<3?'v-yes':r.a<=5?'v-maybe':'v-no';return `<span class="pill ${cl}">${r.a.toLocaleString('el-GR',{maximumFractionDigits:1})} έτη</span> <span class="note">εβδ. ${r.w} / ${r.y}</span>`}
+function segField(c,f,l,o){return `<div class="fld full"><span class="label">${l}</span><div class="seg">${Object.entries(o).map(([v,t])=>`<button class="fbtn" data-act="opt" data-f="${f}" data-v="${v}" aria-pressed="${c[f]===v}">${t}</button>`).join('')}</div></div>`}
+const DEF={};CATALOG.forEach(g=>g.items.forEach(([k,l,c])=>DEF[k]={l,c}));
+const BRAKES={good:'Καλές',bad:'Θέλουν αλλαγή'};
+const TCOND={bad:'Κακή',mid:'Μέτρια',good:'Καλή'};
+const LIGHTS={fl:'εμπρός αριστερό',fr:'εμπρός δεξί',rl:'πίσω αριστερό',rr:'πίσω δεξί',fog:'ομίχλης'};
+const SUBS={lights:{t:'Ποιο φανάρι;',o:LIGHTS},smoke:{t:'Τι χρώμα;',o:{blue:'μπλε',white:'άσπρος',black:'μαύρος'}}};
+const BOLTABLE=['ffl','ffr','hood','fdl','fdr','rdl','rdr','trunk'];
+function defLabel(k,d){let l=DEF[k].l;const s=SUBS[k];if(s&&d&&d.which&&d.which.length)l+=': '+d.which.map(x=>s.o[x]).join(', ');return l}
+function subChoice(c,k){const d=c.defects[k];if(!d||!d.on)return '';const w=d.which||[];const s=SUBS[k];
+  return `<div class="label" style="margin-top:4px">${s.t}</div><div class="defects">${Object.entries(s.o).map(([x,l])=>`<button class="def" data-act="stog" data-k="${k}" data-l="${x}" aria-pressed="${w.includes(x)}">${l.charAt(0).toUpperCase()+l.slice(1)}</button>`).join('')}</div>`}
+const WHEELS={alloy:'Ζάντες',caps:'Τάσια'};
+const WHEELDEF={alloy:[['rims','Γρατζουνισμένες ζάντες',80]],caps:[['capsx','Αλλαγή τασιών',60],['capsm','Λείπουν τάσια',60]]};
+Object.values(WHEELDEF).flat().forEach(([k,l,c])=>DEF[k]={l,c});
+function wheelDefs(c){const L=WHEELDEF[c.wheels]||[];return (c.wheels==='alloy'?segField(c,'rcond','Συνολική εικόνα ζαντών',TCOND):'')+(L.length?`<div class="defects">${L.map(([k,l])=>`<button class="def" data-act="dtog" data-k="${k}" aria-pressed="${!!(c.defects[k]&&c.defects[k].on)}">${esc(l)}</button>`).join('')}</div>`:'')}
+
+function lsGet(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+
+let cars=lsGet(LS_CARS,{});
+let dirty=new Set(lsGet(LS_DIRTY,[]));
+let cfg=Object.assign({t1:160,t2:300,paintCost:100,fillerCost:200,fanoCost:100,vafiCost:100,svisCost:80,pineCost:0,koubCost:0,plasCost:0,brakesCost:250},lsGet(LS_CFG,{}));
+let view='list', curId=null, selPanel=null, selFix=null, confirmDel=false, tick=null, lastTickSave=0;
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const nf=new Intl.NumberFormat('el-GR');
+const eur=n=>'€'+nf.format(Math.round(n||0));
+const mmss=s=>{s=Math.max(0,s|0);return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
+const numv=v=>{const n=parseFloat(String(v??'').replace(/\./g,'').replace(',','.'));return isFinite(n)?n:0};
+
+function list(){return Object.values(cars).filter(c=>!c.deleted).sort((a,b)=>a.createdAt-b.createdAt)}
+function newCar(){
+  const id='c'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  const n=list().length+1;
+  cars[id]={id,n,by:myName(),createdAt:Date.now(),updatedAt:Date.now(),make:'',plate:'',year:'',km:'',price:'',paint:{},fix:{},defects:{},custom:[],notes:'',verdict:'',offer:'',secs:0,deleted:false};
+  touch(id);return id;
+}
+function pstat(v){if(v==null||v==='')return 'none';if(v==='ok')return 'ok';const n=+v;if(!isFinite(n))return 'none';return n<=cfg.t1?'ok':n<=cfg.t2?'paint':'filler'}
+function calc(c){
+  let paint=[],filler=[],items=[];
+  PANELS.forEach(p=>{const s=pstat(c.paint[p.id]);if(s==='paint')paint.push(p);if(s==='filler')filler.push(p)});
+  Object.entries(c.defects||{}).forEach(([k,d])=>{if(d&&d.on&&DEF[k])items.push({l:defLabel(k,d),c:numv(d.cost)})});
+  if(c.brakes==='bad')items.push({l:'Δισκόπλακες για αλλαγή',c:0});
+  (c.custom||[]).forEach(x=>items.push({l:x.label,c:numv(x.cost)}));
+  const fixes=[];
+  PANELS.forEach(p=>{const f=(c.fix||{})[p.id];if(!f)return;const ks=FIXK.filter(k=>f[k.id]);if(ks.length)fixes.push({p,ks,cost:ks.reduce((a,k)=>a+numv(cfg[k.ck]),0)})});
+  const pd=0;
+  const dd=items.reduce((a,b)=>a+b.c,0);
+  const fd=fixes.reduce((a,b)=>a+b.cost,0);
+  const price=numv(c.price);const total=pd+dd+fd;
+  return {paint,filler,items,fixes,pd,dd,fd,total,price,target:price?Math.max(0,price-total):0};
+}
+function label(c){return (c.make||'').trim()||('Αυτοκίνητο '+(c.n||''))}
+
+/* ---------- persistence + sync (Supabase) ---------- */
+const CFG=Object.assign({url:'',anonKey:''},window.AUTOPSIA_CONFIG||{},lsGet('autopsia.sb.v1',{}));
+let sb=null, session=null, flushTimer=null, flushing=false, online=navigator.onLine, syncErr='';
+function uidKey(k){return k+'.'+(session?session.user.id:'anon')}
+function saveLocal(){lsSet(LS_CARS,cars);lsSet(LS_DIRTY,[...dirty])}
+function touch(id){if(!cars[id])return;cars[id].updatedAt=Date.now();dirty.add(id);saveLocal();schedule()}
+function schedule(ms){clearTimeout(flushTimer);flushTimer=setTimeout(flush,ms??1200);setSync()}
+async function flush(){
+  if(!sb||!session||flushing||!dirty.size){setSync();return}
+  flushing=true;
+  const ids=[...dirty];ids.forEach(id=>{if(cars[id]&&!cars[id].by)cars[id].by=myName()});const rows=ids.filter(id=>cars[id]).map(id=>({id,data:JSON.parse(JSON.stringify(cars[id])),updated_at:cars[id].updatedAt||0}));
+  try{
+    const {error}=await sb.from('cars').upsert(rows,{onConflict:'id'});
+    if(error)throw error;
+    ids.forEach(id=>{if(rows.find(r=>r.id===id&&r.updated_at===(cars[id]&&cars[id].updatedAt)))dirty.delete(id)});
+    online=true;syncErr='';
+  }catch(e){online=navigator.onLine;syncErr=online?(e&&e.message||'σφάλμα'):'';flushing=false;saveLocal();setSync();schedule(20000);return}
+  flushing=false;saveLocal();setSync();
+  if(dirty.size)schedule(500);
+  uploadPending();
+}
+async function pull(){
+  if(!sb||!session)return;
+  const since=lsGet(uidKey('autopsia.pull2'),'1970-01-01T00:00:00Z');
+  try{
+    const {data,error}=await sb.from('cars').select('id,data,updated_at,synced_at').gt('synced_at',since).order('synced_at',{ascending:true}).limit(1000);
+    if(error)throw error;
+    let changed=false,max=since;
+    (data||[]).forEach(r=>{if(r.synced_at>max)max=r.synced_at;const l=cars[r.id];
+      if(!l||(r.updated_at||0)>(l.updatedAt||0)){cars[r.id]=r.data;dirty.delete(r.id);changed=true}});
+    lsSet(uidKey('autopsia.pull2'),max);if(data&&data.length===1000)setTimeout(pull,50);online=true;syncErr='';saveLocal();
+    if(changed){const a=document.activeElement;if(!(a&&/INPUT|TEXTAREA/.test(a.tagName)))render();loadLocalUrls()}
+  }catch(e){online=navigator.onLine;syncErr=online?(e&&e.message||'σφάλμα'):''}
+  setSync();
+}
+function setSync(){
+  const el=$('#sync');if(!el)return;el.className='sync';
+  let t;
+  if(!sb||!session)t='Χωρίς λογαριασμό';
+  else if(!navigator.onLine){el.classList.add('pending');t=dirty.size?'Εκτός σύνδεσης · '+dirty.size+' σε αναμονή':'Εκτός σύνδεσης'}
+  else if(member===false){el.classList.add('pending');t='Χωρίς πρόσβαση'}
+  else if(syncErr){el.classList.add('pending');t='Σφάλμα συγχρονισμού'}
+  else if(dirty.size||pendingCount()){el.classList.add('pending');t='Αποθήκευση…'}
+  else{el.classList.add('on');t='Συγχρονισμένο'}
+  el.querySelector('span').textContent=t;
+}
+async function initSupabase(){
+  if(!CFG.url||!CFG.anonKey||!window.supabase){setSync();return}
+  try{
+    sb=window.supabase.createClient(CFG.url,CFG.anonKey,{auth:{persistSession:true,autoRefreshToken:true}});
+    const {data}=await sb.auth.getSession();session=data.session;
+    sb.auth.onAuthStateChange((_e,s)=>{const was=session&&session.user.id;session=s;setSync();
+      if(s&&s.user.id!==was){Object.keys(cars).forEach(id=>dirty.add(id));checkMember();pull().then(()=>schedule(300))}
+      if(view==='settings')render()});
+    if(session){checkMember();await pull();schedule(300)}
+  }catch(e){sb=null}
+  setSync();
+}
+window.addEventListener('online',()=>{online=true;pull().then(()=>schedule(200))});
+window.addEventListener('offline',()=>{online=false;setSync()});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&session)pull()});
+setInterval(()=>{if(!document.hidden&&session&&navigator.onLine)pull()},60000);
+
+/* ---------- photos (IndexedDB cache + Supabase Storage) ---------- */
+const MAXPH=5;const objUrls={};let delPhoto=null,uploading=false;
+function idb(){return new Promise((res,rej)=>{try{const r=indexedDB.open('autopsia',2);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains('blobs'))r.result.createObjectStore('blobs')};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}})}
+async function idbOp(mode,fn){const d=await idb();return new Promise((res,rej)=>{const t=d.transaction('blobs',mode);const q=fn(t.objectStore('blobs'));t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error)})}
+const bPut=(k,v)=>idbOp('readwrite',s=>s.put(v,k)),bGet=k=>idbOp('readonly',s=>s.get(k)),bDel=k=>idbOp('readwrite',s=>s.delete(k));
+const phPath=(c,ph)=>'shared/'+c.id+'/'+ph.pid+'.jpg';
+function myName(){let n='';try{n=localStorage.getItem('autopsia.name')||''}catch(e){}if(!n&&session&&session.user.email)n=session.user.email.split('@')[0];return n}
+let member=null;
+async function checkMember(){if(!sb||!session){member=null;return}try{const {data,error}=await sb.rpc('is_member');if(!error)member=!!data}catch(e){}if(view==='settings')render();setSync()}
+function phSrc(ph){return objUrls[ph.pid]||''}
+function pendingCount(){let n=0;Object.values(cars).forEach(c=>(c.photos||[]).forEach(p=>{if(!p.up)n++}));return n}
+async function loadLocalUrls(){
+  let got=false;
+  for(const c of Object.values(cars)){if(c.deleted)continue;for(const ph of (c.photos||[])){if(objUrls[ph.pid])continue;
+    let b=null;try{b=await bGet(ph.pid)}catch(e){}
+    if(!b&&ph.up&&sb&&session&&navigator.onLine){try{const {data,error}=await sb.storage.from('photos').download(phPath(c,ph));if(!error&&data){b=data;bPut(ph.pid,b).catch(()=>{})}}catch(e){}}
+    if(b){objUrls[ph.pid]=URL.createObjectURL(b);got=true}
+  }}
+  if(got){if(view==='car')refreshPhotos();else render()}
+}
+async function shrink(file){
+  try{const bmp=await createImageBitmap(file,{imageOrientation:'from-image'});const m=1600,s=Math.min(1,m/Math.max(bmp.width,bmp.height));
+    const cv=document.createElement('canvas');cv.width=Math.round(bmp.width*s);cv.height=Math.round(bmp.height*s);cv.getContext('2d').drawImage(bmp,0,0,cv.width,cv.height);
+    return await new Promise(r=>cv.toBlob(b=>r(b||file),'image/jpeg',0.82))}catch(e){return file}
+}
+async function addPhotos(files){
+  const c=cars[curId];if(!c)return;c.photos=c.photos||[];
+  const room=MAXPH-c.photos.length;const list=[...files].slice(0,room);
+  if(files.length>room)toast('Μέχρι '+MAXPH+' φωτογραφίες ανά αυτοκίνητο');
+  for(const f of list){
+    const b=await shrink(f);const pid='p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+    try{await bPut(pid,b)}catch(e){toast('Δεν χωράει άλλη φωτογραφία στη συσκευή');continue}
+    objUrls[pid]=URL.createObjectURL(b);c.photos.push({pid,up:false});touch(c.id);refreshPhotos();
+  }
+  uploadPending();
+}
+async function uploadPending(){
+  if(!sb||!session||uploading||!navigator.onLine)return;uploading=true;
+  try{for(const c of Object.values(cars)){if(c.deleted)continue;for(const ph of (c.photos||[])){if(ph.up)continue;
+    let b;try{b=await bGet(ph.pid)}catch(e){}
+    if(!b)continue;
+    const {error}=await sb.storage.from('photos').upload(phPath(c,ph),b,{contentType:'image/jpeg',upsert:true});
+    if(error){syncErr=error.message||'σφάλμα';setSync();return}
+    ph.up=true;touch(c.id);if(c.id===curId)refreshPhotos();
+  }}}finally{uploading=false;setSync()}
+}
+function removePhotoRemote(c,ph){if(ph.up&&sb&&session)sb.storage.from('photos').remove([phPath(c,ph)]).catch(()=>{});bDel(ph.pid).catch(()=>{})}
+function photosHtml(c){
+  const P=c.photos||[];const pend=P.filter(p=>!p.up).length;
+  const tiles=P.map((ph,i)=>`<div class="ph"><button class="phimg" data-act="phview" data-i="${i}" aria-label="Φωτογραφία ${i+1}">${phSrc(ph)?`<img src="${phSrc(ph)}" alt="">`:''}</button>
+    ${!ph.up?'<span class="phbadge">αναμονή</span>':''}
+    <button class="phx${delPhoto===i?' on':''}" data-act="phdel" data-i="${i}" aria-label="Διαγραφή φωτογραφίας">${delPhoto===i?'Διαγραφή;':'×'}</button></div>`).join('');
+  const add=P.length<MAXPH?`<label class="phadd"><input type="file" id="phin" accept="image/*" multiple data-act="phin"><span>+</span><small>${P.length}/${MAXPH}</small></label>`:'';
+  const note=!session?'Οι φωτογραφίες κρατιούνται στη συσκευή. Συνδέσου στις Ρυθμίσεις για να ανεβαίνουν.':pend?`${pend} περιμένει σήμα για ανέβασμα.`:'';
+  return `<div class="phgrid">${tiles}${add}</div>${note?`<p class="note" style="margin:0">${note}</p>`:''}`;
+}
+function refreshPhotos(){const b=$('#phbox');if(b&&cars[curId])b.innerHTML=photosHtml(cars[curId])}
+function viewer(src){if(!src)return;const v=$('#phview');v.querySelector('img').src=src;v.hidden=false}
+
+/* ---------- rendering ---------- */
+function render(){
+  document.querySelectorAll('#tabs .tab').forEach(t=>t.setAttribute('aria-selected',String(t.dataset.v===(view==='car'?'list':view))));
+  stopTick();
+  const v=$('#view');
+  if(view==='car'&&cars[curId]&&!cars[curId].deleted){v.innerHTML=carView(cars[curId]);startTick();renderBar()}
+  else{ if(view==='car')view='list'; $('#actbar').hidden=true;
+    v.innerHTML=view==='report'?reportView():view==='settings'?settingsView():listView(); }
+}
+function strip(c){return '<div class="strip">'+WALK.map(id=>{const s=pstat(c.paint[id]);return `<span class="${s==='none'?'':'s-'+s}"></span>`}).join('')+'</div>'}
+const VL={yes:['Ναι','v-yes'],maybe:['Ίσως','v-maybe'],no:['Όχι','v-no']};
+function vpill(c){const v=VL[c.verdict];return v?`<span class="pill ${v[1]}">${v[0]}</span>`:'<span class="pill v-none">Χωρίς απόφαση</span>'}
+function listView(){
+  const L=list();
+  if(!L.length)return `<section class="sec empty">
+    <h1 class="h">Έτοιμος για την επίσκεψη</h1>
+    <ol class="steps">
+      <li>Πάτα «Νέο αυτοκίνητο» μόλις φτάσεις στο πρώτο. Ξεκινά χρονόμετρο 5 λεπτών.</li>
+      <li>Μέτρα βαφή κομμάτι-κομμάτι πάνω στο σχέδιο και πάτα τις ελλείψεις που βλέπεις.</li>
+      <li>«Επόμενο αυτοκίνητο» και συνεχίζεις. Στην καρτέλα «Αναφορά» έχεις έτοιμο κείμενο για τη διαπραγμάτευση.</li>
+    </ol>
+    <button class="btn" data-act="new">+ Νέο αυτοκίνητο</button>
+  </section>`;
+  const sum=L.reduce((a,c)=>a+(c.secs||0),0);
+  return `<div class="sec-h"><h1 class="h">${L.length} αυτοκίνητα</h1><span class="aux num">${mmss(sum)} συνολικά</span></div>`+
+   L.map(c=>{const k=calc(c);const issues=k.paint.length+k.filler.length+k.items.length+k.fixes.length;
+    const p0=(c.photos||[])[0];const src=p0?phSrc(p0):'';
+    return `<button class="card${src?' withph':''}" data-act="open" data-id="${c.id}">
+      ${src?`<span class="cthumb"><img src="${src}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">${c.photos.length>1?`<small>${c.photos.length}</small>`:''}</span>`:''}
+      <span class="t">${esc(label(c))}</span>${c.plate?`<span class="plate">${esc(c.plate)}</span>`:'<span></span>'}
+      <span class="m">${[c.year&&esc(c.year),c.km&&nf.format(numv(c.km))+' km',FUEL[c.fuel],GEAR[c.gear],c.price&&'Ζητούν '+eur(numv(c.price))].filter(Boolean).join(' · ')||'Χωρίς στοιχεία ακόμα'}${c.by?`<br><span class="byl">Καταγραφή: ${esc(c.by)}</span>`:''}</span>
+      ${strip(c)}
+      <span class="foot">${vpill(c)}<span class="note">${issues} ευρήματα · <span class="num">${mmss(c.secs)}</span></span><span class="ded num">${k.total?'−'+eur(k.total):''}</span></span>
+    </button>`}).join('')+
+   `<button class="btn" data-act="new">+ Νέο αυτοκίνητο</button>`;
+}
+function svgCar(c,mode){
+  const fix=mode==='fix', rep=mode==='report';
+  let s=rep?`<svg class="carsvg" viewBox="0 0 200 340" aria-hidden="true">`:`<svg class="carsvg" viewBox="0 0 200 340" role="group" aria-label="Κάτοψη αυτοκινήτου, πάτα ένα κομμάτι">`;
+  s+=`<rect x="24" y="42" width="7" height="42" rx="2" fill="var(--car)"/><rect x="169" y="42" width="7" height="42" rx="2" fill="var(--car)"/><rect x="24" y="258" width="7" height="42" rx="2" fill="var(--car)"/><rect x="169" y="258" width="7" height="42" rx="2" fill="var(--car)"/>`;
+  s+=`<path d="M60 100 H140 L134 118 H66 Z" fill="var(--car)" opacity=".6"/><path d="M66 236 H134 L140 248 H60 Z" fill="var(--car)" opacity=".6"/>`;
+  PANELS.forEach(p=>{let st,txt;
+    if(fix){const f=(c.fix||{})[p.id]||{};const ks=FIXK.filter(k=>f[k.id]);st=ks.length?'fx':'none';txt=ks.map(k=>k.s).join('')}
+    else if(rep){st=pstat(c.paint[p.id]);const f=(c.fix||{})[p.id]||{};txt=FIXK.filter(k=>f[k.id]).map(k=>k.s).join('')}
+    else{const v=c.paint[p.id];st=pstat(v);txt=v==='ok'?'✓':(v!=null&&v!=='')?String(v):''}
+    const sel=fix?selFix:selPanel;
+    if(rep)s+=`<rect class="pnl ${st} st" x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" rx="${p.rx||3}"/>`;
+    else s+=`<rect class="pnl ${st}${sel===p.id?' sel':''}" data-act="${fix?'fpanel':'panel'}" data-p="${p.id}" x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" rx="${p.rx||3}" tabindex="0" role="button" aria-label="${esc(p.n)}"><title>${esc(p.n)}</title></rect>`;
+    if(txt){const cx=p.x+p.w/2,cy=p.y+p.h/2;s+=`<text class="pv${fix?' fxt':''}${rep?' rpt'+(st==='none'?' rn0':''):''}" x="${cx}" y="${cy}"${p.v?` transform="rotate(-90 ${cx} ${cy})"`:''}>${esc(txt)}</text>`}
+    if(!fix&&c.bolts&&c.bolts[p.id])s+=`<circle class="boltdot" cx="${p.x+p.w-5}" cy="${p.y+5}" r="3.5"/>`;
+  });
+  return s+'</svg>';
+}
+function editor(c){
+  if(!selPanel)return `<div class="editor"><div class="pn">Πάτα ένα κομμάτι</div><p class="note" style="margin:0">Ξεκίνα από το καπό. Μετά από κάθε μέτρηση το «Επόμενο» σε πάει γύρω από το αυτοκίνητο.</p><button class="btn sm" data-act="panel" data-p="hood">Ξεκίνα από καπό</button></div>`;
+  const p=PMAP[selPanel];const v=c.paint[selPanel];
+  return `<div class="editor">
+    <div><div class="label">Κομμάτι ${WALK.indexOf(selPanel)+1}/${WALK.length}</div><div class="pn">${esc(p.n)}</div></div>
+    <div class="mrow"><input id="pm" inputmode="numeric" pattern="[0-9]*" placeholder="μm" value="${v&&v!=='ok'?esc(v):''}" data-act="pm" aria-label="Πάχος βαφής σε μικρά"><span class="unit">μm</span></div>
+    <div class="quick">
+      <button class="chip" data-act="pok">✓ Κανονικό</button>
+      <button class="chip" data-act="pclr">Σβήσε</button>
+      ${BOLTABLE.includes(selPanel)?`<button class="chip bolt" data-act="pbolt" aria-pressed="${!!(c.bolts&&c.bolts[selPanel])}">⚠ Λυμένες βίδες</button>`:''}
+      <button class="btn sm" data-act="pnext">Επόμενο →</button>
+    </div>
+  </div>`;
+}
+function fb(k){const f=(cars[curId].fix||{})[selFix]||{};const v=numv(cfg[k.ck]);return `<button class="fbtn" data-act="ftog" data-k="${k.id}" aria-pressed="${!!f[k.id]}"><span>${k.n}</span><span class="num">${v?eur(v):''}</span></button>`}
+function fixEditor(c){
+  if(!selFix)return `<div class="editor"><div class="pn">Πάτα ένα κομμάτι</div><p class="note" style="margin:0">Σημείωσε τι θέλει κάθε κομμάτι: φανοποιία, βαφή ή σβήσιμο. Μπορείς να επιλέξεις περισσότερα από ένα.</p><button class="btn sm" data-act="fpanel" data-p="hood">Ξεκίνα από καπό</button></div>`;
+  const f=(c.fix||{})[selFix]||{};
+  return `<div class="editor">
+    <div><div class="label">Κομμάτι ${WALK.indexOf(selFix)+1}/${WALK.length}</div><div class="pn">${esc(PMAP[selFix].n)}</div></div>
+    <div class="fbtns">${FIXK.filter(k=>k.x).map(fb).join('')}</div><div class="label">Μαζί με τα παραπάνω</div><div class="fbtns">${FIXK.filter(k=>!k.x).map(fb).join('')}</div>
+    <div class="quick"><button class="btn sm" data-act="fnext">Επόμενο →</button></div>
+  </div>`;
+}
+function fixFound(c){const k=calc(c);
+  return `<div class="found" id="fixfound">${k.fixes.map(x=>`<div><span class="pill v-maybe" style="background:var(--accent-soft);color:var(--accent)">${eur(x.cost)}</span><span>${esc(x.p.n)}: ${x.ks.map(q=>q.n).join(' + ')}</span></div>`).join('')}<div class="note">${k.fixes.length?k.fixes.length+' κομμάτια · σύνολο '+eur(k.fd):'Καμία διόρθωση ακόμα'}</div></div>`}
+function refreshFix(){const c=cars[curId];$('#fsvgbox').innerHTML=svgCar(c,'fix');$('#fedbox').innerHTML=fixEditor(c);const f=$('#fixfound');if(f)f.outerHTML=fixFound(c);refreshDerived()}
+function found(c){const k=calc(c);let h='';
+  if(k.filler.length)h+=`<div><span class="pill v-no">Στόκος</span><span>${k.filler.map(p=>esc(p.n)+' <b>'+esc(c.paint[p.id])+'</b>').join(', ')}</span></div>`;
+  if(k.paint.length)h+=`<div><span class="pill v-maybe">Βαμμένο</span><span>${k.paint.map(p=>esc(p.n)+' <b>'+esc(c.paint[p.id])+'</b>').join(', ')}</span></div>`;
+  const bp=PANELS.filter(p=>c.bolts&&c.bolts[p.id]);
+  if(bp.length)h+=`<div><span class="pill v-none" style="color:var(--ink)">Λυμένες βίδες</span><span>${bp.map(p=>esc(p.n)).join(', ')}</span></div>`;
+  const m=PANELS.filter(p=>pstat(c.paint[p.id])!=='none').length;
+  return `<div class="found" id="found">${h||''}<div class="note">${m}/${PANELS.length} κομμάτια μετρημένα</div></div>`}
+function onList(c){
+  const rows=[];
+  Object.entries(c.defects||{}).forEach(([k,d])=>{if(d&&d.on&&DEF[k])rows.push(`<div class="onrow"><span class="nm">${esc(defLabel(k,d))}</span><input inputmode="numeric" data-act="dcost" data-k="${k}" value="${esc(d.cost)}" placeholder="€ αν θες" aria-label="Κόστος ${esc(DEF[k].l)}"><button class="x" data-act="dtog" data-k="${k}" aria-label="Αφαίρεση">×</button></div>`)});
+  (c.custom||[]).forEach(x=>rows.push(`<div class="onrow"><span class="nm">${esc(x.label)}</span><input inputmode="numeric" data-act="ccost" data-cid="${x.id}" value="${esc(x.cost)}" aria-label="Κόστος"><button class="x" data-act="cdel" data-cid="${x.id}" aria-label="Αφαίρεση">×</button></div>`));
+  return rows.length?`<div class="label">Εκτίμηση κόστους (€)</div><div class="onlist">${rows.join('')}</div>`:'';
+}
+function carView(c){
+  const k=calc(c);
+  return `<div class="carbar"><button class="back" data-act="back" aria-label="Πίσω στη λίστα">←</button><div class="title">${esc(label(c))}</div><div class="timer" id="timer">${mmss(c.secs)}</div></div>
+  <div class="tbar"><b id="tbarb" style="width:${Math.min(100,(c.secs||0)/LIMIT*100)}%"></b></div>
+
+  <section class="sec"><div class="sec-h"><h2 class="h">Στοιχεία</h2></div>
+    <div class="grid2">
+      <label class="fld full"><span class="label">Μάρκα / μοντέλο</span><input id="f-make" data-act="f" data-f="make" value="${esc(c.make)}" placeholder="π.χ. Toyota Yaris Hybrid"></label>
+      <label class="fld"><span class="label">Πινακίδα</span><input id="f-plate" data-act="f" data-f="plate" value="${esc(c.plate)}" autocapitalize="characters"></label>
+      <label class="fld"><span class="label">Έτος</span><input id="f-year" data-act="f" data-f="year" value="${esc(c.year)}" inputmode="numeric"></label>
+      <label class="fld"><span class="label">Χιλιόμετρα</span><input id="f-km" data-act="f" data-f="km" value="${esc(c.km)}" inputmode="numeric"></label>
+      <label class="fld"><span class="label">Ζητούμενη τιμή €</span><input id="f-price" data-act="f" data-f="price" value="${esc(c.price)}" inputmode="numeric"></label>
+      <label class="fld"><span class="label">Χρώμα εξωτερικό</span><input id="f-ext" data-act="f" data-f="ext" value="${esc(c.ext)}" placeholder="π.χ. Γκρι μεταλλικό"></label>
+      <label class="fld"><span class="label">Χρώμα εσωτερικό</span><input id="f-int" data-act="f" data-f="int" value="${esc(c.int)}" placeholder="π.χ. Μαύρο"></label>
+      ${segField(c,'fuel','Καύσιμο',FUEL)}
+      ${segField(c,'gear','Σασμάν',GEAR)}
+      ${segField(c,'uph','Ταπετσαρία',UPH)}
+    </div>
+  </section>
+
+  <section class="sec"><div class="sec-h"><h2 class="h">Φωτογραφίες</h2><span class="aux">έως ${MAXPH}</span></div>
+    <div id="phbox">${photosHtml(c)}</div>
+  </section>
+
+  <section class="sec"><div class="sec-h"><h2 class="h">Βαφή</h2><span class="aux">↑ εμπρός · Α = οδηγός</span></div>
+    <div class="paintwrap"><div id="svgbox">${svgCar(c)}</div><div id="edbox">${editor(c)}</div></div>
+    <div class="legend"><span><i style="background:var(--ok)"></i>≤ ${cfg.t1} μm εργοστασιακό</span><span><i style="background:var(--paint)"></i>${cfg.t1+1}–${cfg.t2} βαμμένο</span><span><i style="background:var(--filler)"></i>&gt; ${cfg.t2} στόκος</span></div>
+    ${found(c)}
+  </section>
+
+  <section class="sec"><div class="sec-h"><h2 class="h">Διορθώσεις</h2><span class="aux">Φ φανοπ. · Β βαφή · Σ σβήσ. · Π πινελ. · Κ κούμπ. · Πλ πλαστ.</span></div>
+    <div class="paintwrap"><div id="fsvgbox">${svgCar(c,'fix')}</div><div id="fedbox">${fixEditor(c)}</div></div>
+    ${fixFound(c)}
+  </section>
+
+  <section class="sec"><div class="sec-h"><h2 class="h">Ελαστικά</h2><span class="aux">DOT: εβδομάδα + έτος, π.χ. 2321</span></div>
+    <div class="tyres">${TYRES.map(t=>`<label class="fld${t.k==='sp'?' full':''}"><span class="label">${t.n}</span><input id="ty-${t.k}" class="tyin" data-act="tyre" data-k="${t.k}" value="${esc((c.tyres||{})[t.k])}" inputmode="numeric" maxlength="4" placeholder="WWYY"><span id="ta-${t.k}">${tyreAge((c.tyres||{})[t.k])}</span></label>`).join('')}</div>
+    ${segField(c,'tcond','Συνολική εικόνα ελαστικών',TCOND)}
+    ${segField(c,'wheels','Τροχοί',WHEELS)}
+    <div id="wheeldefs">${wheelDefs(c)}</div>
+    ${segField(c,'brakes','Δισκόπλακες',BRAKES)}
+    <p class="note" style="margin:-6px 0 0">Καλές: λεία επιφάνεια, χωρίς αυλάκια, δόντι στην άκρη κάτω από ~1 mm.</p>
+    ${segField(c,'spare','Στο πορτ-μπαγκάζ',SPARE)}
+    <div class="legend"><span><i style="background:var(--ok)"></i>&lt; 3 έτη</span><span><i style="background:var(--paint)"></i>3–5 έτη</span><span><i style="background:var(--filler)"></i>&gt; 5 έτη</span></div>
+  </section>
+
+  <section class="sec"><div class="sec-h"><h2 class="h">Ελλείψεις</h2><span class="aux">πάτα ό,τι βλέπεις</span></div>
+    ${CATALOG.map(g=>`<div class="dgroup"><div class="label">${g.g}</div><div class="defects">${g.items.map(([key,l])=>`<button class="def" data-act="dtog" data-k="${key}" aria-pressed="${!!(c.defects[key]&&c.defects[key].on)}">${esc(l)}</button>`).join('')}</div>${g.items.filter(([key])=>SUBS[key]).map(([key])=>`<div id="sub-${key}">${subChoice(c,key)}</div>`).join('')}</div>`).join('')}
+    <div class="addrow"><input id="cl" placeholder="Άλλο εύρημα…" aria-label="Άλλο εύρημα"><input id="cc" inputmode="numeric" placeholder="€" aria-label="Κόστος"><button class="btn sm" data-act="cadd">Προσθήκη</button></div>
+    <div id="onbox">${onList(c)}</div>
+  </section>
+
+  <section class="sec"><div class="sec-h"><h2 class="h">Σημειώσεις</h2></div>
+    <label class="fld"><textarea id="f-notes" data-act="f" data-f="notes" placeholder="Ό,τι άλλο θες να θυμάσαι στη διαπραγμάτευση" aria-label="Σημειώσεις">${esc(c.notes)}</textarea></label>
+  </section>
+
+  <section class="sec"><div class="sec-h"><h2 class="h">Απόφαση</h2></div>
+    <div class="verdict">${['yes','maybe','no'].map(v=>`<button class="vbtn ${v}" data-act="verdict" data-v="${v}" aria-pressed="${c.verdict===v}">${VL[v][0]}</button>`).join('')}</div>
+    <div class="calc" id="calc">${calcHtml(c,k)}</div>
+    <label class="fld"><span class="label">Η προσφορά μου €</span><input id="f-offer" data-act="f" data-f="offer" value="${esc(c.offer)}" inputmode="numeric"></label>
+    <div class="delrow">${confirmDel?`<button class="btn sm ghost" data-act="delno">Άκυρο</button><button class="btn sm danger" data-act="delyes">Οριστική διαγραφή</button>`:`<button class="btn sm ghost" data-act="del">Διαγραφή αυτοκινήτου</button>`}</div>
+  </section>`;
+}
+function calcHtml(c,k){
+  return `<span>Ζητούμενη</span><span class="r">${k.price?eur(k.price):'—'}</span>
+  <span>Διορθώσεις (${k.fixes.length} κομμάτια)</span><span class="r">−${eur(k.fd)}</span>
+  <span>Ελλείψεις (${k.items.length})</span><span class="r">−${eur(k.dd)}</span>
+  <span class="big">Τιμή-στόχος</span><span class="r big">${k.price?eur(k.target):'—'}</span>`;
+}
+function renderBar(){
+  const c=cars[curId];const k=calc(c);const bar=$('#actbar');bar.hidden=false;bar.className='actbar';
+  bar.innerHTML=`<div class="wrap"><div class="tot"><span class="label">Κρατήσεις</span><b id="bartot">−${eur(k.total)}</b></div><button class="btn" data-act="next">Επόμενο αυτοκίνητο →</button></div>`;
+}
+function refreshDerived(){
+  const c=cars[curId];if(!c)return;const k=calc(c);
+  const a=$('#calc');if(a)a.innerHTML=calcHtml(c,k);
+  const b=$('#bartot');if(b)b.textContent='−'+eur(k.total);
+}
+function refreshPaint(focus){
+  const c=cars[curId];
+  $('#svgbox').innerHTML=svgCar(c);$('#edbox').innerHTML=editor(c);
+  const f=$('#found');if(f)f.outerHTML=found(c);
+  refreshDerived();
+  if(focus){const i=$('#pm');if(i){i.focus({preventScroll:true});i.select()}}
+}
+function carText(c){
+  const k=calc(c);const L=[];
+  L.push('■ '+label(c)+(c.plate?'  ['+c.plate+']':''));
+  if(c.by)L.push('Καταγραφή: '+c.by);
+  const meta=[c.year&&('Έτος '+c.year),c.km&&(nf.format(numv(c.km))+' km'),c.price&&('Ζητούν '+eur(numv(c.price)))].filter(Boolean).join(' · ');
+  if(meta)L.push(meta);
+  const tech=[FUEL[c.fuel],GEAR[c.gear]].filter(Boolean).join(' · ');
+  if(tech)L.push(tech);
+  const look=[c.ext&&('Εξωτ. '+c.ext),c.int&&('Εσωτ. '+c.int),UPH[c.uph]].filter(Boolean).join(' · ');
+  if(look)L.push(look);
+  if(VL[c.verdict])L.push('Απόφαση: '+VL[c.verdict][0]);
+  const bl=p=>(c.bolts&&c.bolts[p.id])?', λυμένες βίδες':'';
+  if(k.filler.length)L.push('Στόκος (>'+cfg.t2+'μm): '+k.filler.map(p=>p.n+' '+c.paint[p.id]+'μm'+bl(p)).join('; '));
+  if(k.paint.length)L.push('Βαμμένα: '+k.paint.map(p=>p.n+' '+c.paint[p.id]+'μm'+bl(p)).join('; '));
+  const ob=PANELS.filter(p=>c.bolts&&c.bolts[p.id]&&!['paint','filler'].includes(pstat(c.paint[p.id])));
+  if(ob.length)L.push('Λυμένες βίδες: '+ob.map(p=>p.n).join(', '));
+  const meas=PANELS.filter(p=>pstat(c.paint[p.id])!=='none').length;
+  if(meas&&!k.paint.length&&!k.filler.length)L.push('Βαφή: όλα εργοστασιακά ('+meas+'/'+PANELS.length+' μετρημένα)');
+  const ty=TYRES.filter(t=>(c.tyres||{})[t.k]).map(t=>{const v=c.tyres[t.k],r=dotAge(v);return t.s+' '+v+(r?' ('+r.a.toLocaleString('el-GR',{maximumFractionDigits:1})+' ετών)':'')});
+  const tl=[TCOND[c.tcond]&&('Ελαστικά: '+TCOND[c.tcond].toLowerCase()+' εικόνα'),ty.length&&('DOT: '+ty.join(', ')),WHEELS[c.wheels]&&(WHEELS[c.wheels]+(c.wheels==='alloy'&&TCOND[c.rcond]?' ('+TCOND[c.rcond].toLowerCase()+' εικόνα)':'')),SPARE[c.spare]].filter(Boolean);
+  if(c.brakes==='good')tl.push('Δισκόπλακες καλές');
+  if(tl.length)L.push(tl.join(' · '));
+  if(k.fixes.length){L.push('Διορθώσεις:');k.fixes.forEach(x=>L.push('  – '+x.p.n+': '+x.ks.map(q=>q.n).join(' + ')+' ('+eur(x.cost)+')'))}
+  if(k.items.length){L.push('Ελλείψεις:');k.items.forEach(i=>L.push('  – '+i.l+(i.c?' (≈'+eur(i.c)+')':'')))}
+  if((c.notes||'').trim())L.push('Σημειώσεις: '+c.notes.trim());
+  L.push('Κρατήσεις: −'+eur(k.total)+(k.price?' → Τιμή-στόχος '+eur(k.target):''));
+  if(c.offer)L.push('Προσφορά μου: '+eur(numv(c.offer)));
+  return L.join('\n');
+}
+function sortedForReport(){const o={yes:0,maybe:1,'':2,no:3};return list().sort((a,b)=>(o[a.verdict||'']-o[b.verdict||''])||(a.createdAt-b.createdAt))}
+const fmt1=n=>n.toLocaleString('el-GR',{maximumFractionDigits:1});
+function chip(t,cls){return `<span class="rc ${cls||''}">${t}</span>`}
+function rgroup(title,body){return body?`<div class="rg"><div class="label">${title}</div><div class="rcs">${body}</div></div>`:''}
+function condCls(v){return v==='good'?'g':v==='mid'?'w':v==='bad'?'b':''}
+function repCard(c){
+  const k=calc(c);
+  const meta=[c.year&&esc(c.year),c.km&&nf.format(numv(c.km))+' km',FUEL[c.fuel],GEAR[c.gear]].filter(Boolean).join(' · ');
+  const look=[c.ext&&esc(c.ext),c.int&&('εσωτ. '+esc(c.int)),UPH[c.uph]].filter(Boolean).join(' · ');
+  // body
+  let body='';
+  body+=k.filler.map(p=>chip(`<b>Στόκος</b> ${esc(p.n)} <span class="num">${esc(c.paint[p.id])}</span>`,'b')).join('');
+  body+=k.paint.map(p=>chip(`<b>Βαμμένο</b> ${esc(p.n)} <span class="num">${esc(c.paint[p.id])}</span>`,'w')).join('');
+  body+=PANELS.filter(p=>c.bolts&&c.bolts[p.id]).map(p=>chip(`⚠ Βίδες ${esc(p.n)}`,'k')).join('');
+  const meas=PANELS.filter(p=>pstat(c.paint[p.id])!=='none').length;
+  if(meas&&!k.paint.length&&!k.filler.length)body+=chip(`Εργοστασιακή βαφή ${meas}/${PANELS.length}`,'g');
+  let fx=k.fixes.map(x=>chip(`${esc(x.p.n)}: ${x.ks.map(q=>q.n).join(' + ')} <span class="num">${eur(x.cost)}</span>`,'a')).join('');
+  // tyres
+  let ty=TYRES.filter(t=>(c.tyres||{})[t.k]).map(t=>{const r=dotAge(c.tyres[t.k]);const cl=!r?'':r.a<3?'g':r.a<=5?'w':'b';return chip(`${t.s} <span class="num">${esc(c.tyres[t.k])}</span>${r?' · '+fmt1(r.a)+' έτη':''}`,cl)}).join('');
+  if(TCOND[c.tcond])ty+=chip('Εικόνα ελαστικών: '+TCOND[c.tcond].toLowerCase(),condCls(c.tcond));
+  if(WHEELS[c.wheels])ty+=chip(WHEELS[c.wheels]+(c.wheels==='alloy'&&TCOND[c.rcond]?': '+TCOND[c.rcond].toLowerCase():''),c.wheels==='alloy'?condCls(c.rcond):'');
+  if(BRAKES[c.brakes])ty+=chip('Δισκόπλακες: '+BRAKES[c.brakes].toLowerCase(),c.brakes==='good'?'g':'b');
+  if(SPARE[c.spare])ty+=chip(SPARE[c.spare]);
+  // defects by group
+  const on=key=>{const d=c.defects[key];return d&&d.on};
+  const dchip=key=>{const d=c.defects[key];return chip(esc(defLabel(key,d))+(numv(d.cost)?` <span class="num">${eur(numv(d.cost))}</span>`:''),'b')};
+  Object.values(WHEELDEF).flat().forEach(([key])=>{if(on(key))ty+=dchip(key)});
+  const groups=CATALOG.map(g=>rgroup(g.g,g.items.filter(([key])=>on(key)).map(([key])=>dchip(key)).join(''))).join('');
+  const other=(c.custom||[]).map(x=>chip(esc(x.label)+(numv(x.cost)?` <span class="num">${eur(numv(x.cost))}</span>`:''),'b')).join('');
+  const nothing=!body&&!fx&&!ty&&!groups&&!other;
+  return `<article class="rcard rv-${c.verdict||'none'}" id="r-${c.id}">
+    <header class="rh">
+      <div class="rt"><div class="rn">${esc(label(c))}${c.plate?` <span class="plate">${esc(c.plate)}</span>`:''}</div>
+        ${meta?`<div class="rm">${meta}</div>`:''}${c.by?`<div class="rm">Καταγραφή: <b>${esc(c.by)}</b></div>`:''}${look?`<div class="rm">${look}</div>`:''}</div>
+      <div class="rp"><div class="label">Στόχος</div><div class="rbig num">${k.price?eur(k.target):'—'}</div>
+        <div class="rm num">${k.price?'ζητούν '+eur(k.price):'χωρίς τιμή'}${k.total?' · −'+eur(k.total):''}</div>
+        ${c.offer?`<div class="rm">προσφορά μου <b class="num">${eur(numv(c.offer))}</b></div>`:''}</div>
+    </header>
+    ${(c.photos||[]).length?`<div class="rphotos">${c.photos.map((ph,i)=>`<button class="phimg" data-act="rphview" data-id="${c.id}" data-i="${i}" aria-label="Φωτογραφία ${i+1}"><img src="${phSrc(ph)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'"></button>`).join('')}</div>`:''}
+    <div class="rbody">
+      <div class="rsvg">${svgCar(c,'report')}</div>
+      <div class="rgs">
+        ${rgroup('Αμάξωμα',body)}${rgroup('Διορθώσεις',fx)}${rgroup('Ελαστικά',ty)}${groups}${rgroup('Άλλα',other)}
+        ${nothing?'<p class="note" style="margin:0">Δεν σημειώθηκαν ευρήματα.</p>':''}
+        ${(c.notes||'').trim()?`<div class="rg"><div class="label">Σημειώσεις</div><p class="rnote">${esc(c.notes.trim())}</p></div>`:''}
+      </div>
+    </div>
+    <footer class="rf">${vpill(c)}<span class="note num">${mmss(c.secs)}</span><button class="btn sm ghost" style="margin-left:auto" data-act="copy" data-id="${c.id}">Αντιγραφή</button><button class="btn sm ghost" data-act="open" data-id="${c.id}">Άνοιγμα</button></footer>
+  </article>`;
+}
+function reportView(){
+  const L=sortedForReport();
+  if(!L.length)return `<section class="sec"><h1 class="h">Αναφορά</h1><p class="note" style="margin:0">Δεν υπάρχουν αυτοκίνητα ακόμα. Πρόσθεσε το πρώτο από την καρτέλα «Αυτοκίνητα».</p></section>`;
+  const rows=L.map(c=>{const k=calc(c);return `<tr data-act="jump" data-id="${c.id}"><td><span class="dot v-${c.verdict||'none'}"></span>${esc(label(c))}${c.plate?`<div class="rm">${esc(c.plate)}</div>`:''}</td><td class="num r">${k.price?eur(k.price):'—'}</td><td class="num r">${k.total?'−'+eur(k.total):'—'}</td><td class="num r"><b>${k.price?eur(k.target):'—'}</b></td></tr>`}).join('');
+  return `<div class="sec-h"><h1 class="h">Αναφορά</h1><span class="aux">${L.length} αυτοκίνητα</span></div>
+  <section class="sec" style="padding:0;overflow:hidden">
+    <div class="tscroll"><table class="rtab"><thead><tr><th>Αυτοκίνητο</th><th class="r">Ζητούν</th><th class="r">Διορθ.</th><th class="r">Στόχος</th></tr></thead><tbody>${rows}</tbody></table></div>
+  </section>
+  <div class="legend"><span><i style="background:var(--ok)"></i>Εργοστασιακό</span><span><i style="background:var(--paint)"></i>Βαμμένο</span><span><i style="background:var(--filler)"></i>Στόκος</span><span>Φ Β Σ Π Κ Πλ = διόρθωση</span><span>● = λυμένες βίδες</span></div>
+  ${L.map(repCard).join('')}
+  <button class="btn ghost" data-act="copyall">Αντιγραφή όλης της αναφοράς ως κείμενο</button>`;
+}
+function accountHtml(){
+  if(!CFG.url||!CFG.anonKey)return `<p class="note" style="margin:0">Σύνδεσε τη βάση Supabase για συγχρονισμό και φωτογραφίες στο cloud. Θα τα βρεις στο Supabase: Project Settings › API.</p>
+    <label class="fld"><span class="label">Project URL</span><input id="sb-url" placeholder="https://xxxx.supabase.co" autocapitalize="off" autocomplete="off"></label>
+    <label class="fld"><span class="label">Anon public key</span><input id="sb-key" placeholder="eyJ…" autocapitalize="off" autocomplete="off"></label>
+    <button class="btn" data-act="sbsave">Αποθήκευση</button>`;
+  if(!window.supabase)return `<p class="note" style="margin:0">Η βιβλιοθήκη συγχρονισμού δεν φόρτωσε. Άνοιξε την εφαρμογή μία φορά με ίντερνετ.</p>`;
+  if(!session)return `<p class="note" style="margin:0">Συνδέσου για να συγχρονίζονται τα αυτοκίνητα και οι φωτογραφίες σου. Μέχρι τότε όλα μένουν σε αυτή τη συσκευή.</p>
+    <label class="fld"><span class="label">Email</span><input id="au-email" type="email" autocomplete="email" autocapitalize="off"></label>
+    <label class="fld"><span class="label">Κωδικός</span><input id="au-pass" type="password" autocomplete="current-password"></label>
+    <div class="grid2"><button class="btn" data-act="login">Σύνδεση</button><button class="btn ghost" data-act="signup">Νέος λογαριασμός</button></div>
+    <p class="note" id="au-msg" style="margin:0"></p>`;
+  return `<p style="margin:0">Συνδεδεμένος ως <b>${esc(session.user.email||'')}</b></p>
+    ${member===false?`<p class="note" style="margin:0;color:var(--filler)">Αυτό το email δεν είναι στη λίστα μελών, οπότε δεν βλέπεις τα κοινά αυτοκίνητα. Ζήτα να σε προσθέσουν.</p>`:''}
+    <label class="fld"><span class="label">Το όνομά σου (φαίνεται σε όσα καταγράφεις)</span><input id="my-name" data-act="myname" value="${esc(myName())}" autocomplete="name"></label>
+    <p class="note" style="margin:0">Κάθε αλλαγή σώζεται αμέσως στο κινητό και ανεβαίνει όταν υπάρχει σήμα.</p>
+    <div class="grid2"><button class="btn ghost" data-act="syncnow">Συγχρονισμός τώρα</button><button class="btn ghost" data-act="logout">Αποσύνδεση</button></div>
+    <button class="btn sm ghost" data-act="sbreset" style="justify-self:start">Αλλαγή βάσης Supabase</button>`;
+}
+function settingsView(){
+  const f=(id,l,v,h)=>`<label class="fld"><span class="label">${l}</span><input id="${id}" data-act="cfg" data-k="${id.slice(2)}" value="${v}" inputmode="numeric"></label>`;
+  return `<section class="sec"><div class="sec-h"><h1 class="h">Όρια μετρητή βαφής</h1></div>
+    <p class="note" style="margin:0">Εργοστασιακή βαφή είναι συνήθως 80–160 μm. Κάποιες μάρκες βγάζουν πιο ψηλά. Αν δεις ότι όλο το αυτοκίνητο μετρά π.χ. 170, ανέβασε το πρώτο όριο.</p>
+    <div class="grid2">${f('c-t1','Εργοστασιακό έως (μm)',cfg.t1)}${f('c-t2','Βαμμένο έως (μm)',cfg.t2)}</div>
+  </section>
+  <section class="sec"><div class="sec-h"><h2 class="h">Κόστος διορθώσεων</h2></div>
+    <p class="note" style="margin:0">Ανά κομμάτι. Αν ένα κομμάτι θέλει φανοποιία και βαφή, μετράνε και τα δύο.</p>
+    <div class="grid2">${f('c-fanoCost','Φανοποιία €',cfg.fanoCost)}${f('c-vafiCost','Βαφή €',cfg.vafiCost)}${f('c-svisCost','Σβήσιμο €',cfg.svisCost)}${f('c-pineCost','Πινελάκι €',cfg.pineCost)}${f('c-koubCost','Κούμπωμα €',cfg.koubCost)}${f('c-plasCost','Πλαστικά €',cfg.plasCost)}</div>
+  </section>
+  <section class="sec"><div class="sec-h"><h2 class="h">Λογαριασμός</h2></div>
+    ${accountHtml()}
+  </section>`;
+}
+
+/* ---------- timer ---------- */
+function startTick(){
+  try{navigator.wakeLock&&navigator.wakeLock.request('screen').then(l=>{window.__wl=l}).catch(()=>{})}catch(e){}
+  tick=setInterval(()=>{const c=cars[curId];if(!c||document.hidden)return;c.secs=(c.secs||0)+1;
+    const t=$('#timer');if(t){t.textContent=mmss(c.secs);t.className='timer'+(c.secs>=LIMIT?' over':c.secs>=LIMIT-60?' warn':'')}
+    const b=$('#tbarb');if(b)b.style.width=Math.min(100,c.secs/LIMIT*100)+'%';
+    if(c.secs===LIMIT){try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}}
+    if(Date.now()-lastTickSave>15000){lastTickSave=Date.now();saveLocal()}
+  },1000);
+  const t=$('#timer'),c=cars[curId];if(t&&c)t.className='timer'+(c.secs>=LIMIT?' over':c.secs>=LIMIT-60?' warn':'');
+}
+function stopTick(){if(tick){clearInterval(tick);tick=null;if(cars[curId])touch(curId)}try{window.__wl&&window.__wl.release();window.__wl=null}catch(e){}}
+
+/* ---------- actions ---------- */
+function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(t._h);t._h=setTimeout(()=>t.hidden=true,1800)}
+async function copy(text){try{await navigator.clipboard.writeText(text);toast('Αντιγράφηκε')}catch(e){
+  const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();
+  let ok=false;try{ok=document.execCommand('copy')}catch(_){}ta.remove();toast(ok?'Αντιγράφηκε':'Επίλεξε το κείμενο και αντέγραψέ το')}}
+function open(id){curId=id;view='car';selPanel=null;selFix=null;delPhoto=null;confirmDel=false;render();window.scrollTo(0,0)}
+function nextPanel(){const i=WALK.indexOf(selPanel);selPanel=WALK[(i+1)%WALK.length];refreshPaint(true)}
+
+document.addEventListener('click',e=>{
+  const el=e.target.closest('[data-act]');if(!el)return;const a=el.dataset.act;const c=cars[curId];
+  switch(a){
+    case 'sbsave':{const u=$('#sb-url').value.trim().replace(/\/+$/,''),k=$('#sb-key').value.trim();if(!/^https:\/\/.+/.test(u)||k.length<20){toast('Έλεγξε το URL και το key');break}
+      lsSet('autopsia.sb.v1',{url:u,anonKey:k});location.reload();break}
+    case 'sbreset':lsSet('autopsia.sb.v1',{url:'',anonKey:''});try{localStorage.removeItem('autopsia.sb.v1')}catch(e){}location.reload();break;
+    case 'login':case 'signup':{const em=$('#au-email').value.trim(),pw=$('#au-pass').value;const msg=$('#au-msg');
+      if(!em||pw.length<6){msg.textContent='Γράψε email και κωδικό τουλάχιστον 6 χαρακτήρων.';break}
+      msg.textContent='Περίμενε…';
+      (a==='login'?sb.auth.signInWithPassword({email:em,password:pw}):sb.auth.signUp({email:em,password:pw})).then(({data,error})=>{
+        if(error){msg.textContent=error.message==='Invalid login credentials'?'Λάθος email ή κωδικός.':error.message;return}
+        if(a==='signup'&&!data.session){msg.textContent='Στάλθηκε email επιβεβαίωσης. Πάτα το link και μετά «Σύνδεση».';return}
+        toast('Συνδέθηκες')}).catch(()=>{msg.textContent='Δεν υπάρχει σύνδεση στο ίντερνετ.'});break}
+    case 'logout':sb.auth.signOut().then(()=>{toast('Αποσυνδέθηκες');render()});break;
+    case 'syncnow':pull().then(()=>{flush();uploadPending();loadLocalUrls();toast(navigator.onLine?'Συγχρονίστηκε':'Εκτός σύνδεσης')});break;
+    case 'theme':applyTheme(THEMES[(THEMES.indexOf(theme)+1)%3],true);toast(theme==='auto'?'Θέμα: όπως το κινητό':theme==='light'?'Θέμα: φωτεινό':'Θέμα: σκοτεινό');break;
+    case 'tab':view=el.dataset.v;render();window.scrollTo(0,0);break;
+    case 'new':open(newCar());setTimeout(()=>{const i=$('#f-make');i&&i.focus()},50);break;
+    case 'open':open(el.dataset.id);break;
+    case 'back':view='list';render();break;
+    case 'next':{touch(curId);const id=newCar();open(id);toast('Αυτοκίνητο '+cars[id].n);break}
+    case 'panel':selPanel=el.dataset.p;refreshPaint(true);break;
+    case 'pok':c.paint[selPanel]='ok';touch(curId);nextPanel();break;
+    case 'pclr':delete c.paint[selPanel];touch(curId);refreshPaint(true);break;
+    case 'pnext':nextPanel();break;
+    case 'opt':{const f=el.dataset.f;c[f]=c[f]===el.dataset.v?'':el.dataset.v;touch(curId);if(f==='brakes'){$('#onbox').innerHTML=onList(c);refreshDerived()}document.querySelectorAll(`[data-act="opt"][data-f="${f}"]`).forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===c[f])));
+      if(f==='wheels'){const keep=new Set((WHEELDEF[c.wheels]||[]).map(x=>x[0]));Object.values(WHEELDEF).flat().forEach(([k])=>{if(!keep.has(k)&&c.defects[k])c.defects[k].on=false});
+        $('#wheeldefs').innerHTML=wheelDefs(c);$('#onbox').innerHTML=onList(c);refreshDerived()}
+      break}
+    case 'fpanel':selFix=el.dataset.p;refreshFix();break;
+    case 'ftog':{c.fix=c.fix||{};const f=c.fix[selFix]=c.fix[selFix]||{};const k=el.dataset.k;if(!f[k]&&FIXK.find(q=>q.id===k).x)FIXK.forEach(q=>{if(q.x)delete f[q.id]});
+      if(f[k])delete f[k];else f[k]=true;if(!Object.keys(f).length)delete c.fix[selFix];touch(curId);refreshFix();break}
+    case 'fnext':{const i=WALK.indexOf(selFix);selFix=WALK[(i+1)%WALK.length];refreshFix();break}
+    case 'dtog':{const k=el.dataset.k;const d=c.defects[k];
+      if(d&&d.on)d.on=false;else c.defects[k]={on:true,cost:d&&d.cost!=null?d.cost:'',which:d&&d.which};
+      touch(curId);document.querySelectorAll(`.def[data-k="${k}"]`).forEach(b=>b.setAttribute('aria-pressed',String(c.defects[k].on)));
+      if(SUBS[k]){const s=$('#sub-'+k);if(s)s.innerHTML=subChoice(c,k)}
+      $('#onbox').innerHTML=onList(c);refreshDerived();break}
+    case 'stog':{const k=el.dataset.k;const d=c.defects[k];if(!d)break;const w=d.which=d.which||[];const l=el.dataset.l;const i=w.indexOf(l);if(i>=0)w.splice(i,1);else w.push(l);
+      const ord=Object.keys(SUBS[k].o);w.sort((a,b)=>ord.indexOf(a)-ord.indexOf(b));
+      touch(curId);$('#sub-'+k).innerHTML=subChoice(c,k);$('#onbox').innerHTML=onList(c);refreshDerived();break}
+    case 'pbolt':{c.bolts=c.bolts||{};if(c.bolts[selPanel])delete c.bolts[selPanel];else c.bolts[selPanel]=true;touch(curId);refreshPaint(false);break}
+    case 'cadd':{const l=$('#cl'),co=$('#cc');const t=l.value.trim();if(!t){l.focus();break}
+      c.custom=c.custom||[];c.custom.push({id:Date.now().toString(36),label:t,cost:co.value.trim()});l.value='';co.value='';
+      touch(curId);$('#onbox').innerHTML=onList(c);refreshDerived();break}
+    case 'cdel':c.custom=(c.custom||[]).filter(x=>x.id!==el.dataset.cid);touch(curId);$('#onbox').innerHTML=onList(c);refreshDerived();break;
+    case 'verdict':c.verdict=c.verdict===el.dataset.v?'':el.dataset.v;touch(curId);document.querySelectorAll('.vbtn').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===c.verdict)));break;
+    case 'del':confirmDel=true;render();break;
+    case 'delno':confirmDel=false;render();break;
+    case 'phview':{const ph=(c.photos||[])[+el.dataset.i];if(ph)viewer(phSrc(ph));break}
+    case 'rphview':{const ph=(cars[el.dataset.id].photos||[])[+el.dataset.i];if(ph)viewer(phSrc(ph));break}
+    case 'phclose':$('#phview').hidden=true;break;
+    case 'phdel':{const i=+el.dataset.i;if(delPhoto!==i){delPhoto=i;refreshPhotos();break}
+      const ph=c.photos[i];c.photos.splice(i,1);delPhoto=null;touch(curId);refreshPhotos();
+      removePhotoRemote(c,ph);break}
+    case 'delyes':(c.photos||[]).forEach(ph=>removePhotoRemote(c,ph));c.photos=[];c.deleted=true;touch(curId);confirmDel=false;view='list';render();toast('Διαγράφηκε');break;
+    case 'jump':{const t=document.getElementById('r-'+el.dataset.id);if(t)t.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});break}
+    case 'copy':copy(carText(cars[el.dataset.id]));break;
+    case 'copyall':copy('ΑΥΤΟΨΙΑ — '+new Date().toLocaleDateString('el-GR')+'\n\n'+sortedForReport().map(carText).join('\n\n'));break;
+  }
+});
+document.addEventListener('keydown',e=>{
+  const el=e.target;
+  if(el.dataset&&(el.dataset.act==='panel'||el.dataset.act==='fpanel')&&(e.key==='Enter'||e.key===' ')){e.preventDefault();el.dispatchEvent(new MouseEvent('click',{bubbles:true}))}
+  if(el.id==='pm'&&e.key==='Enter'){e.preventDefault();nextPanel()}
+  if((el.id==='cl'||el.id==='cc')&&e.key==='Enter'){e.preventDefault();$('[data-act="cadd"]').click()}
+});
+document.addEventListener('change',e=>{const el=e.target;if(el.dataset&&el.dataset.act==='phin'&&el.files&&el.files.length){const f=[...el.files];el.value='';addPhotos(f)}});
+document.addEventListener('input',e=>{
+  const el=e.target;const a=el.dataset&&el.dataset.act;if(!a)return;const c=cars[curId];
+  if(a==='f'){c[el.dataset.f]=el.value;touch(curId);if(el.dataset.f==='make'){const t=document.querySelector('.carbar .title');t&&(t.textContent=label(c))}refreshDerived()}
+  else if(a==='pm'){const v=el.value.replace(/[^0-9]/g,'');if(v)c.paint[selPanel]=v;else delete c.paint[selPanel];touch(curId);
+    $('#svgbox').innerHTML=svgCar(c);const f=$('#found');if(f)f.outerHTML=found(c);refreshDerived()}
+  else if(a==='tyre'){const v=el.value.replace(/\D/g,'').slice(0,4);if(v!==el.value)el.value=v;c.tyres=c.tyres||{};if(v)c.tyres[el.dataset.k]=v;else delete c.tyres[el.dataset.k];touch(curId);
+    $('#ta-'+el.dataset.k).innerHTML=tyreAge(v);if(v.length===4){const i=TYRES.findIndex(t=>t.k===el.dataset.k);const n=TYRES[i+1]&&$('#ty-'+TYRES[i+1].k);if(n&&dotAge(v))n.focus()}}
+  else if(a==='dcost'){c.defects[el.dataset.k].cost=el.value;touch(curId);refreshDerived()}
+  else if(a==='ccost'){const x=(c.custom||[]).find(x=>x.id===el.dataset.cid);if(x){x.cost=el.value;touch(curId);refreshDerived()}}
+  else if(a==='myname'){try{localStorage.setItem('autopsia.name',el.value.trim())}catch(e){}}
+  else if(a==='cfg'){const n=numv(el.value);if(n>0||el.dataset.k.endsWith('Cost')){cfg[el.dataset.k]=n;lsSet(LS_CFG,cfg)}}
+});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){saveLocal()}else if(view==='car'&&!window.__wl){try{navigator.wakeLock&&navigator.wakeLock.request('screen').then(l=>{window.__wl=l}).catch(()=>{})}catch(e){}}});
+window.addEventListener('pagehide',saveLocal);
+
+render();setSync();initSupabase().then(()=>loadLocalUrls());
+})();
+</script>
+<script>
+if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').then(r=>{
+  r.addEventListener('updatefound',()=>{const n=r.installing;n&&n.addEventListener('statechange',()=>{if(n.state==='installed'&&navigator.serviceWorker.controller){const t=document.getElementById('toast');t.textContent='Νέα έκδοση: κλείσε και άνοιξε την εφαρμογή';t.hidden=false;setTimeout(()=>t.hidden=true,5000)}})})
+}).catch(()=>{})})}
+</script>
+</body>
+</html>
